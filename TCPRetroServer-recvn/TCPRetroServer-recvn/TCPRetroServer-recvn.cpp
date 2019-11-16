@@ -1,5 +1,6 @@
 ﻿//
 // Created by Chaos on 2019/10/19.
+// 以recvn方式接收数据
 //
 
 #include "pch.h"
@@ -45,7 +46,7 @@ int main()
 		return -1;
 	}
 
-	printf("服务器启动，等待客户端连接...\n");
+	printf("服务器启动，等待客户端连接...\n\n");
 
 	// 监听
 	if (listen(serverSocket, 3))
@@ -61,9 +62,16 @@ int main()
 	SOCKADDR_IN clientAddrIn;
 	int addrInSize = sizeof(SOCKADDR_IN);
 	int recvCount = -1;
+	int RECVBUFFSIZE = 0;
+
+	//指定接收长度
+	printf("请输入每次接收字符串的长度：");
+	scanf("%d", &RECVBUFFSIZE);
+
 	char echo[] = "echo:";
-	char messageRecv[BUFFSIZE];    // 来自于客户端的数据
-	char messageSend[BUFFSIZE];  // 发送给客户端的数据
+	char* messageRecvPer = (char*)malloc(sizeof(char)*(RECVBUFFSIZE + 1));   // 每次接收的的数据
+	char* messageRecv = (char*)malloc(sizeof(char)*BUFFSIZE);	// 来自于客户端的数据 
+	char* messageSend = (char*)malloc(sizeof(char)*BUFFSIZE);	// 发送到客户端的数据 
 
 	while (1)   // 循环等待连接
 	{
@@ -84,26 +92,38 @@ int main()
 		// 服务器接收消息直到客户端退出
 		while (1)
 		{
-			recvCount = recv(clientSocket, messageRecv, BUFFSIZE - 1, 0);
-			if (recvCount < 0)    // 接收出错
+			memset(messageRecv, '\0', BUFFSIZE);
+			while (1)
 			{
-				printf("消息接受错误\n");
-				printf("error: ");
-				printf("%d\n", WSAGetLastError());
-				closesocket(clientSocket);
-				break;
+				recvCount = recv(clientSocket, messageRecvPer, RECVBUFFSIZE, 0);
+				if (recvCount < 0)    // 接收出错
+				{
+					printf("消息接受错误\n");
+					printf("error: ");
+					printf("%d\n", WSAGetLastError());
+					closesocket(clientSocket);
+					break;
+				}
+				else if (recvCount == 0)	//连接关闭
+				{
+					printf("客户端连接关闭\n");
+					break;
+				}
+				if (messageRecvPer[recvCount-1] == '\0')
+				{
+					strcat(messageRecv, messageRecvPer);
+					break;
+				}
+				messageRecvPer[recvCount] = '\0';
+				if (strcmp(messageRecvPer, "q") == 0)
+				{
+					printf("客户端退出连接\n");
+					break;
+				}
+				strcat(messageRecv, messageRecvPer);
 			}
-			else if (recvCount == 0)	//连接关闭
-			{
-				printf("客户端连接关闭\n");
+			if (recvCount <= 0)
 				break;
-			}
-			messageRecv[recvCount] = '\0';
-			if (strcmp(messageRecv, "q") == 0)
-			{
-				printf("客户端退出连接\n");
-				break;
-			}
 			printf("Recv From Client: %s\n", messageRecv);
 			strcpy(messageSend, echo);
 			strcat(messageSend, messageRecv);
