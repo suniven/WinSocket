@@ -11,7 +11,7 @@
 #define WSAERROR -1		// WSADATA对象错误
 #define SOCKERROR -2	// 创建套接字错误
 #define BINDERROR -3	// 绑定IP和端口错误
-#define BUFFSIZE 256	// 缓冲区大小
+#define BUFFSIZE 128	// 接收缓冲区大小
 
 int main()
 {
@@ -54,11 +54,23 @@ int main()
 	int recvCount = -1;	// recvfrom函数的返回值
 	int index = 0;	// 报文序号
 	int count = 0;	// 服务器接收到的报文数
+	int sendCount = 0;	// 客户端发送的报文数
 	int sleepInterval = 0;	//控制接收速率
 	double lossRate = 0;
 
 	printf("请输入接收两条报文之间的时间间隔(ms)：");
 	scanf("%d", &sleepInterval);
+
+	// 接收缓冲区
+	int nRecvBuf = 128;	// 设置为128bit
+	printf("请输入想设置的socket缓冲区大小(bit):");
+	scanf("%d", &nRecvBuf);
+	setsockopt(serverSocket, SOL_SOCKET, SO_RCVBUF, (const char*)&nRecvBuf, sizeof(int));
+
+	printf("请输入发送的数据报个数：");
+	scanf("%d", &sendCount);
+
+	printf("=================================\n\n");
 
 	while (true)	// 循环处理
 	{
@@ -66,19 +78,20 @@ int main()
 		index++;
 		if (recvCount >= 0)	// 返回值大于0，接收到数据
 		{
-			printf("第%d次接收，接收字符个数%d", index, recvCount);
+			printf("第%d次接收，接收字符个数%d\n", index, recvCount);
 			count++;
 		}
 		else
 		{
 			printf("接收消息出错：%d\n", WSAGetLastError());
 			printf("出错报文序号: %d\n", index);
-			continue;
 		}
 		Sleep(sleepInterval);
 		lossRate = 1 - (double)count / index;
 		printf("当前接收%d次，%d次接收成功\n", index, count);
-		printf("(报文已到达服务器缓冲区的情况下)丢包率%lf\n\n", lossRate);
+		printf("(报文已到达服务器缓冲区的情况下)丢包率%lf\n", lossRate);
+		lossRate = 1 - (double)count / sendCount;
+		printf("(所有报文)丢包率%lf\n\n", lossRate);
 	}
 
 	closesocket(serverSocket);

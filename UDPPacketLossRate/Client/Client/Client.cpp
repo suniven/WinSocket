@@ -11,7 +11,7 @@
 #define SOCKERROR -2	// 创建套接字错误
 #define BINDERROR -3	// 绑定IP和端口错误
 #define RECVERROR -4	// 接收消息出错
-#define BUFFSIZE 256	//缓冲区大小
+#define BUFFSIZE 64	//缓冲区大小
 
 
 int main()
@@ -47,7 +47,7 @@ int main()
 	memset(sendBuff, 'w', BUFFSIZE - 1);	// 发送的一个包
 	sendBuff[BUFFSIZE - 1] = '\0';
 
-	printf("请发送的数据报个数：");
+	printf("请输入发送的数据报个数：");
 	scanf("%d", &count);
 	for (int i = 0; i < count; i++)
 	{
