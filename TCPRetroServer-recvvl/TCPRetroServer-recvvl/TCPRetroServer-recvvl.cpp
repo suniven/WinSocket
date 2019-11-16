@@ -4,6 +4,7 @@
 //
 
 #include "pch.h"
+#include "MsgPackage.h"
 #include <winsock2.h>
 #include <stdio.h>
 #include <time.h>

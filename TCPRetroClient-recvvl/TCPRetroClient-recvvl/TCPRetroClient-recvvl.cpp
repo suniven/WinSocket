@@ -34,9 +34,6 @@ int main()
 	clientAddrIn.sin_port = htons(9999);   // 网络字节序
 	clientAddrIn.sin_addr.S_un.S_addr = inet_addr("10.236.78.15");    //服务器地址
 
-	char messageSend[BUFFSIZE];  // 客户端发送缓冲区
-	char messageRecv[BUFFSIZE];  // 客户端接收缓冲区
-
 	// 连接服务器失败
 	if (connect(clientSocket, (struct sockaddr*) &clientAddrIn, sizeof(clientAddrIn)))
 	{
@@ -49,41 +46,61 @@ int main()
 	}
 
 	printf("连接服务器成功\n");
+
+	int RECVBUFFSIZE;	// 每次接收的字符个数
+	printf("请输入每次接收字符串的长度：");
+	scanf("%d", &RECVBUFFSIZE);
+	char* messageRecvPer = (char*)malloc(sizeof(char)*(RECVBUFFSIZE + 1));	// 每次接收的字符串
+	char messageSend[BUFFSIZE];  // 客户端发送缓冲区
+	char messageRecv[BUFFSIZE];  // 客户端接收缓冲区
+
 	int recvCount = -1;
+	// scanf("%*[^\n]%*c");
 	while (1)
 	{
 		memset(messageSend, '\0', BUFFSIZE);
+		// fflush(stdin);
 		printf("请输入消息：");
-		fgets(messageSend, BUFFSIZE - 1, stdin);
+		// fgets(messageSend, BUFFSIZE - 1, stdin);
 		// 去\n
-		messageSend[strlen(messageSend) - 1] = '\0';
+		// messageSend[strlen(messageSend) - 1] = '\0';
+		scanf("%s", messageSend);
+		messageSend[strlen(messageSend)] = '\0';
 		if (strcmp(messageSend, "q") == 0)
 			break;
 		send(clientSocket, messageSend, strlen(messageSend) + 1, 0);
 		//循环接收
 		while (1)
 		{
-			recvCount = recv(clientSocket, messageRecv, BUFFSIZE, 0);
-			if (recvCount == 0)
+			memset(messageRecv, '\0', RECVBUFFSIZE);
+			while (1)
 			{
-				printf("连接关闭\n");
-				return 0;
+				recvCount = recv(clientSocket, messageRecvPer, RECVBUFFSIZE, 0);
+				if (recvCount == 0)
+				{
+					printf("连接关闭\n");
+					return 0;
+				}
+				else if (recvCount < 0)
+				{
+					printf("消息接收错误");
+					return -1;
+				}
+				if (messageRecvPer[recvCount - 1] == '\0')
+				{
+					strcat(messageRecv, messageRecvPer);
+					break;
+				}
+				messageRecvPer[recvCount] = '\0';
+				strcat(messageRecv, messageRecvPer);
 			}
-			else if (recvCount < 0)
-			{
-				printf("消息接收错误");
-				return -1;
-			}
-			else
-			{
-				messageRecv[recvCount] = '\0';
-				fputs(messageRecv, stdout);
-				printf("\n");
-				break;
-			}
+			fputs(messageRecv, stdout);
+			printf("\n");
+			break;
 		}
 	}
 	closesocket(clientSocket);
 	WSACleanup();
+	getchar();
 	return 0;
 }
