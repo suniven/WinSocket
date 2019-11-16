@@ -1,21 +1,61 @@
-﻿// Client.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
-//
+﻿// UDP回射客户端
 
 #include "pch.h"
-#include <iostream>
+#include <stdio.h>
+#include <winsock2.h>
+#include <string.h>
+
+#pragma comment(lib,"ws2_32.lib")
+
+#define WSAERROR -1		//WSADATA对象错误
+#define SOCKERROR -2	// 创建套接字错误
+#define BINDERROR -3	// 绑定IP和端口错误
+#define RECVERROR -4	// 接收消息出错
+#define BUFFSIZE 256	//缓冲区大小
+
 
 int main()
 {
-    std::cout << "Hello World!\n"; 
+	WSADATA wsadata;    // WSADATA对象，接收WSAStartup的返回数据
+	if (WSAStartup(MAKEWORD(2, 2), &wsadata)) // 版本是2
+	{
+		WSACleanup();
+		printf("WSAStartup调用错误\n");
+		return WSAERROR;
+	}
+
+	SOCKET clientSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (clientSocket == INVALID_SOCKET)
+	{
+		WSACleanup();
+		printf("创建客户端套接字错误: %d\n", WSAGetLastError());
+		return SOCKERROR;
+	}
+
+	// 在IPv4中用sockaddr_in
+	SOCKADDR_IN clientAddrIn;
+	clientAddrIn.sin_family = AF_INET;
+	clientAddrIn.sin_port = htons(9999);   // 网络字节序
+	clientAddrIn.sin_addr.S_un.S_addr = inet_addr("10.236.78.15");    //服务器地址
+
+	char recvBuff[BUFFSIZE];	// 接收缓冲区
+	char sendBuff[BUFFSIZE];	// 发送缓冲区
+	int count = 0;				// 发送的数据包个数
+	int addrInSize = sizeof(clientAddrIn);
+	int recvCount = -1;	// recvfrom函数的返回值
+
+	memset(sendBuff, 'w', BUFFSIZE - 1);	// 发送的一个包
+	sendBuff[BUFFSIZE - 1] = '\0';
+
+	printf("请发送的数据报个数：");
+	scanf("%d", &count);
+	for (int i = 0; i < count; i++)
+	{
+		sendto(clientSocket, sendBuff, strlen(sendBuff) + 1, 0, (SOCKADDR*)&clientAddrIn, addrInSize);
+	}
+	
+	closesocket(clientSocket);
+	WSACleanup();
+
+	return 0;
 }
-
-// 运行程序: Ctrl + F5 或调试 >“开始执行(不调试)”菜单
-// 调试程序: F5 或调试 >“开始调试”菜单
-
-// 入门提示: 
-//   1. 使用解决方案资源管理器窗口添加/管理文件
-//   2. 使用团队资源管理器窗口连接到源代码管理
-//   3. 使用输出窗口查看生成输出和其他消息
-//   4. 使用错误列表窗口查看错误
-//   5. 转到“项目”>“添加新项”以创建新的代码文件，或转到“项目”>“添加现有项”以将现有代码文件添加到项目
-//   6. 将来，若要再次打开此项目，请转到“文件”>“打开”>“项目”并选择 .sln 文件

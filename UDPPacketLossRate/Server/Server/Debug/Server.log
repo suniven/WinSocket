@@ -1,0 +1,3 @@
+﻿  Server.cpp
+e:\c++\socket\udppacketlossrate\server\server\server.cpp(51): warning C4101: “sendBuff”: 未引用的局部变量
+  Server.vcxproj -> E:\C++\Socket\UDPPacketLossRate\Server\Debug\Server.exe

@@ -1,0 +1,4 @@
+﻿  pch.cpp
+  Client.cpp
+e:\c++\socket\udppacketlossrate\client\client\client.cpp(41): warning C4101: “recvBuff”: 未引用的局部变量
+  Client.vcxproj -> E:\C++\Socket\UDPPacketLossRate\Client\Debug\Client.exe
