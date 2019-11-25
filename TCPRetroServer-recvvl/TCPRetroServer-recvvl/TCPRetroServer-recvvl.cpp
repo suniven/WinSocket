@@ -1,18 +1,110 @@
-﻿//
-// Created by Chaos on 2019/10/19.
-// 以recvvl方式接收数据
-//
-
+﻿
 #include "pch.h"
-#include "MsgPackage.h"
-#include <winsock2.h>
 #include <stdio.h>
-#include <time.h>
+#include <winsock2.h>
 #include <string.h>
-
 #pragma comment(lib,"ws2_32.lib")
 
-#define BUFFSIZE 256    // 缓冲区长度
+
+#define WSAERROR -1		// WSADATA对象错误
+#define SOCKERROR -2	// 创建套接字错误
+#define BINDERROR -3	// 绑定IP和端口错误
+#define RECVERROR -4	// 接收消息错误
+#define LISTENERROR -5	// 监听错误
+#define BUFFSIZE 1024	// 缓冲区大小
+
+//定长数据
+int recvn(SOCKET s, char *recvbuf, unsigned int fixedlen)
+{
+	int iResult;
+	int cnt;
+	cnt = fixedlen;
+	while (cnt > 0)
+	{
+		iResult = recv(s, recvbuf, cnt, 0);
+		if (iResult > 0)
+		{
+			recvbuf += iResult;	// 指针后移
+			cnt -= iResult;
+		}
+		else if (iResult == 0)
+		{
+			printf("连接关闭\n");
+			return fixedlen - cnt;
+		}
+		else
+		{
+			printf("接收错误\n");
+			return RECVERROR;
+		}
+
+	}
+	return fixedlen;
+}
+
+//变长数据接收
+int recvvl(SOCKET s, char *recvbuf, unsigned int recvbuflen)
+{
+	int iResult;//存储单次recv操作的返回值
+	unsigned int reclen; //用于存储消息首部存储的长度信息
+	iResult = recvn(s, (char *)&reclen, sizeof(unsigned int));
+	if (iResult != sizeof(unsigned int))
+	{
+		if (iResult == -1)
+		{
+			printf("接收错误");
+			return RECVERROR;
+		}
+		else
+		{
+			printf("连接关闭");
+			return 0;
+		}
+	}
+	reclen = ntohl(reclen);
+	printf("\n该消息长度：%d\n", reclen);
+	if (reclen > recvbuflen)
+	{
+		while (reclen > 0)
+		{
+			iResult = recvn(s, recvbuf, recvbuflen);
+			if (iResult != recvbuflen)
+			{
+				if (iResult == -1)
+				{
+					printf("接收发生错误:%d\n", WSAGetLastError());
+					return RECVERROR;
+				}
+				if (iResult == 0)
+				{
+					// printf("连接关闭\n");
+					return 0;
+				}
+			}
+			reclen -= recvbuflen;
+			if (reclen < recvbuflen)
+				recvbuflen = reclen;
+		}
+		printf("可变长度的消息超出预分配的接收缓存\r\n");
+		return -1;
+	}
+	//接收可变长消息
+	iResult = recvn(s, recvbuf, reclen);
+	if (iResult != reclen)
+	{
+		if (iResult == -1)
+		{
+			printf("接收发生错误:%d\n", WSAGetLastError());
+			return -1;
+		}
+		if (iResult == 0)
+		{
+			printf("连接关闭\n");
+			return 0;
+		}
+	}
+	return iResult;
+}
 
 int main()
 {
@@ -21,18 +113,15 @@ int main()
 	{
 		WSACleanup();
 		printf("WSAStartup调用出错\n");
-		return -1;
+		return WSAERROR;
 	}
-
-	SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (serverSocket == INVALID_SOCKET)
+	SOCKET serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);	// 创建套接字
+	if (serverSocket == INVALID_SOCKET)	// 创建失败
 	{
 		WSACleanup();
-		printf("create socket error: ");
-		printf("%d\n", WSAGetLastError());
-		return -1;
+		printf("创建套接字错误: %d\n", WSAGetLastError());
+		return SOCKERROR;
 	}
-
 	// 在IPv4中用sockaddr_in
 	SOCKADDR_IN serverAddrIn;
 	serverAddrIn.sin_family = AF_INET;
@@ -42,39 +131,31 @@ int main()
 	if (bind(serverSocket, (struct sockaddr*)&serverAddrIn, sizeof(serverAddrIn)))    // 转化一下
 	{
 		WSACleanup();
-		printf("bind error: ");
-		printf("%d\n", WSAGetLastError());
-		return -1;
+		printf("绑定错误: %d\n", WSAGetLastError());
+		return BINDERROR;
 	}
 
-	printf("服务器启动，等待客户端连接...\n\n");
+	printf("服务器启动... ...\n\n");
 
 	// 监听
-	if (listen(serverSocket, 3))
+	if (listen(serverSocket, 5))
 	{
 		closesocket(serverSocket);
 		WSACleanup();
-		printf("socket error: ");
+		printf("监听错误: ");
 		printf("%d\n", WSAGetLastError());
-		return -1;
+		return LISTENERROR;
 	}
 
 	SOCKET clientSocket;    // 接收客户端连接的套接字
 	SOCKADDR_IN clientAddrIn;
 	int addrInSize = sizeof(SOCKADDR_IN);
 	int recvCount = -1;
-	int RECVBUFFSIZE = 0;
+	char echo[] = "echo: ";
+	char recvBuff[BUFFSIZE];	// 接收缓冲区
+	char sendBuff[BUFFSIZE];	// 发送缓冲区
 
-	//指定接收长度
-	printf("请输入每次接收字符串的长度：");
-	scanf("%d", &RECVBUFFSIZE);
-
-	char echo[] = "echo:";
-	char* messageRecvPer = (char*)malloc(sizeof(char)*(RECVBUFFSIZE + 1));   // 每次接收的的数据
-	char* messageRecv = (char*)malloc(sizeof(char)*BUFFSIZE);	// 来自于客户端的数据 
-	char* messageSend = (char*)malloc(sizeof(char)*BUFFSIZE);	// 发送到客户端的数据 
-
-	while (1)   // 循环等待连接
+	while (1)
 	{
 		clientSocket = accept(serverSocket, (struct sockaddr *) &clientAddrIn, &addrInSize);
 		if (clientSocket == INVALID_SOCKET) // 连接失败
@@ -90,50 +171,32 @@ int main()
 		printf("IP地址：%s  ", inet_ntoa(clientAddrIn.sin_addr));
 		printf("端口：%d\n", htons(clientAddrIn.sin_port));
 
-		// 服务器接收消息直到客户端退出
 		while (1)
 		{
-			memset(messageRecv, '\0', BUFFSIZE);
-			while (1)
-			{
-				recvCount = recv(clientSocket, messageRecvPer, RECVBUFFSIZE, 0);
-				if (recvCount < 0)    // 接收出错
-				{
-					printf("消息接受错误\n");
-					printf("error: ");
-					printf("%d\n", WSAGetLastError());
-					closesocket(clientSocket);
-					break;
-				}
-				else if (recvCount == 0)	//连接关闭
-				{
-					printf("客户端连接关闭\n");
-					break;
-				}
-				if (messageRecvPer[recvCount - 1] == '\0')
-				{
-					strcat(messageRecv, messageRecvPer);
-					break;
-				}
-				messageRecvPer[recvCount] = '\0';
-				if (strcmp(messageRecvPer, "q") == 0)
-				{
-					printf("客户端退出连接\n");
-					break;
-				}
-				strcat(messageRecv, messageRecvPer);
-			}
-			if (recvCount <= 0)
+			memset(recvBuff, 0, BUFFSIZE);
+			recvCount = recvvl(clientSocket, recvBuff, BUFFSIZE);
+			if (recvCount == -1)
+				return RECVERROR;
+			if (recvCount == 0)
 				break;
-			printf("Recv From Client: %s\n", messageRecv);
-			strcpy(messageSend, echo);
-			strcat(messageSend, messageRecv);
-			send(clientSocket, messageSend, strlen(messageSend) + 1, 0);
+
+			if (strcmp(recvBuff, "q") == 0)
+			{
+				printf("客户端退出连接\n");
+				break;
+			}
+				
+			printf("Received from client:%s\n", recvBuff);
+			strcpy(sendBuff, echo);
+			strcat(sendBuff, recvBuff);
+			unsigned int len = strlen(sendBuff) + 1;
+			len = htonl(len);
+			send(clientSocket, (const char*)&len, sizeof(unsigned int), 0);	// 先发送长度
+			send(clientSocket, sendBuff, strlen(sendBuff) + 1, 0);
 		}
-		closesocket(clientSocket);
 	}
+	
 	closesocket(serverSocket);
 	WSACleanup();
-
 	return 0;
 }

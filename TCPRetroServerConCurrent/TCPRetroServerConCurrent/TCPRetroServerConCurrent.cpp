@@ -54,7 +54,7 @@ DWORD WINAPI Echo(LPVOID pParam)
 			break;
 		}
 		recvBuff[recvCount] = '\0';
-		if (strcmp(recvBuff, "q") == 0)
+		if (strcmp(recvBuff, "q\n") == 0)
 		{
 			printf("IP地址：%s  ", inet_ntoa(clientAddrIn.sin_addr));
 			printf("端口：%d ", htons(clientAddrIn.sin_port));

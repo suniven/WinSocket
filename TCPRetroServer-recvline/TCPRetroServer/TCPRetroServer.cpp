@@ -1,4 +1,6 @@
-﻿//
+﻿
+/*
+//
 // Created by Chaos on 2019/10/19.
 //
 
@@ -35,7 +37,7 @@ int main()
 	SOCKADDR_IN serverAddrIn;
 	serverAddrIn.sin_family = AF_INET;
 	serverAddrIn.sin_port = htons(9999);   // 网络字节序
-	serverAddrIn.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
+	serverAddrIn.sin_addr.S_un.S_addr = INADDR_ANY;	//本机所有IP地址
 
 	if (bind(serverSocket, (struct sockaddr*)&serverAddrIn, sizeof(serverAddrIn)))    // 转化一下
 	{
@@ -116,3 +118,4 @@ int main()
 
 	return 0;
 }
+*/

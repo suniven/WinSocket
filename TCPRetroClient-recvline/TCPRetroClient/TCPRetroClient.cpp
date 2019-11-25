@@ -32,7 +32,7 @@ int main()
 	SOCKADDR_IN clientAddrIn;
 	clientAddrIn.sin_family = AF_INET;
 	clientAddrIn.sin_port = htons(9999);   // 网络字节序
-	clientAddrIn.sin_addr.S_un.S_addr = inet_addr("10.236.78.15");    //服务器地址
+	clientAddrIn.sin_addr.S_un.S_addr = inet_addr("10.236.104.66");    //服务器地址
 
 	char messageSend[BUFFSIZE];  // 客户端发送缓冲区
 	char messageRecv[BUFFSIZE];  // 客户端接收缓冲区

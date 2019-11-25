@@ -11,7 +11,7 @@
 
 #pragma comment(lib,"ws2_32.lib")
 
-#define BUFFSIZE 256    // 缓冲区长度
+#define BUFFSIZE 1024    // 缓冲区长度
 
 int main()
 {
@@ -62,6 +62,7 @@ int main()
 	SOCKADDR_IN clientAddrIn;
 	int addrInSize = sizeof(SOCKADDR_IN);
 	int recvCount = -1;
+
 	int RECVBUFFSIZE = 0;
 
 	//指定接收长度
@@ -109,7 +110,7 @@ int main()
 					printf("客户端连接关闭\n");
 					break;
 				}
-				if (messageRecvPer[recvCount-1] == '\0')
+				if (messageRecvPer[recvCount - 1] == '\0')
 				{
 					strcat(messageRecv, messageRecvPer);
 					break;
@@ -136,3 +137,83 @@ int main()
 
 	return 0;
 }
+	
+	/*
+	
+
+
+
+
+
+int recvn(SOCKET s, char * recvbuf, unsigned int fixedlen)
+{
+	int iResult;    // 存储单次recv操作的返回值
+	int cnt = fixedlen;    // 剩余多少字节尚未接收
+	while (cnt > 0)
+	{
+		printf("cnt: %d\n", cnt);
+		iResult = recv(s, recvbuf, cnt, 0);
+		if (iResult < 0)
+		{
+			printf("接收错误: %d\n", WSAGetLastError());
+			return -1;
+		}
+		if (iResult == 0)
+		{
+			printf("连接关闭\n");
+			return fixedlen - cnt;
+		}
+		recvbuf += iResult;	// 指针后移
+		cnt -= iResult;	// 更新cnt
+	}
+	return fixedlen;	// 接收完毕
+}
+
+
+unsigned int fixedlen = 0;	// 固定接收长度
+
+	printf("请输入每次接收的数据长度：");
+	scanf("%d", &fixedlen);
+
+	char echo[] = "echo:";
+	char* messageRecv = (char*)malloc(sizeof(char)*BUFFSIZE);	// 来自于客户端的数据
+	char* messageSend = (char*)malloc(sizeof(char)*BUFFSIZE);	// 发送到客户端的数据
+
+	while (1)	// 循环等待连接
+	{
+		clientSocket = accept(serverSocket, (struct sockaddr *) &clientAddrIn, &addrInSize);
+		if (clientSocket == INVALID_SOCKET) // 连接失败
+		{
+			printf("连接客户端失败\n");
+			printf("error: ");
+			printf("%d\n", WSAGetLastError());
+			closesocket(serverSocket);
+			WSACleanup();
+			return -1;
+		}
+		printf("接收到一个客户端连接：\n");
+		printf("IP地址：%s  ", inet_ntoa(clientAddrIn.sin_addr));
+		printf("端口：%d\n", htons(clientAddrIn.sin_port));
+
+		// 服务器接收消息直到客户端退出
+		while (1)
+		{
+			memset(messageRecv, '\0', BUFFSIZE);
+			recvCount = recvn(clientSocket, messageRecv, fixedlen);
+			if (recvCount != fixedlen)
+			{
+				if (recvCount == -1)
+					return -1;
+				else
+					continue;
+			}
+			printf("Recv From Client: %s\n", messageRecv);
+			strcpy(messageSend, echo);
+			strcat(messageSend, messageRecv);
+			send(clientSocket, messageSend, strlen(messageSend) + 1, 0);
+		}
+	}
+
+	
+	*/
+	

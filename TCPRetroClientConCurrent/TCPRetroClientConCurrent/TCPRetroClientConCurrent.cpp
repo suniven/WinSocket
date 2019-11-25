@@ -36,7 +36,7 @@ int main()
 	SOCKADDR_IN clientAddrIn;
 	clientAddrIn.sin_family = AF_INET;
 	clientAddrIn.sin_port = htons(9999);   // 网络字节序
-	clientAddrIn.sin_addr.S_un.S_addr = inet_addr("10.236.78.15");    //服务器地址
+	clientAddrIn.sin_addr.S_un.S_addr = inet_addr("10.236.104.66");    //服务器地址
 
 	// 连接服务器失败
 	if (connect(clientSocket, (struct sockaddr*) &clientAddrIn, sizeof(clientAddrIn)))
@@ -59,9 +59,10 @@ int main()
 	while (1)
 	{
 		printf("请输入消息：");
-		scanf("%s", sendBuff);
+		// scanf("%s", sendBuff);
+		fgets(sendBuff, BUFFSIZE - 1, stdin);
 		send(clientSocket, sendBuff, strlen(sendBuff) + 1, 0);
-		if (strcmp(sendBuff, "q") == 0)
+		if (strcmp(sendBuff, "q\n") == 0)
 			break;
 		recvCount = recv(clientSocket, recvBuff, BUFFSIZE-1, 0);
 		if (recvCount > 0)
