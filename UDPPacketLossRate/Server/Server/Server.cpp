@@ -63,7 +63,7 @@ int main()
 
 	// 接收缓冲区
 	int nRecvBuf = 128;	// 设置为128bit
-	printf("请输入想设置的socket缓冲区大小(bit):");
+	printf("请输入想设置的socket缓冲区大小:");
 	scanf("%d", &nRecvBuf);
 	setsockopt(serverSocket, SOL_SOCKET, SO_RCVBUF, (const char*)&nRecvBuf, sizeof(int));
 

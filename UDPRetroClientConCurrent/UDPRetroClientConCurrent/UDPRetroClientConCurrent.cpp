@@ -37,7 +37,7 @@ int main()
 	clientAddrIn.sin_family = AF_INET;
 	clientAddrIn.sin_port = htons(9999);   // 网络字节序
 	// clientAddrIn.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");    //服务器地址
-	clientAddrIn.sin_addr.S_un.S_addr = inet_addr("10.236.59.210");    //服务器地址
+	clientAddrIn.sin_addr.S_un.S_addr = inet_addr("10.241.192.130");    //服务器地址
 
 	char recvBuff[BUFFSIZE];	// 接收缓冲区
 	char sendBuff[BUFFSIZE];	// 发送缓冲区
